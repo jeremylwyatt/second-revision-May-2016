@@ -137,7 +137,7 @@ Either the regression or density estimation formulation can be used in a modular
 
 Both formulations give learning problems that increase in difficulty as further contacts are added. One question is whether either formulation can be recast, so as to take advantage of the natural
 problem structure. This section presents one such scheme for the
-density estimation (or CPD) formulation, based on a product of experts.
+density estimation (or CPD) formulation, based on a product of experts (Figure~\ref{fig:modular}).
 
 Specifically, the CPD formulation allows us to factorise the density,
 and approximate $p_{qs}$, by making a conditional independence
@@ -180,7 +180,7 @@ p_{global}\  p_{agent} \mathop{\prod}_{k=1 \ldots N}{ p_{env,k} }
 \noindent where similarity transforms, as described in Section~\ref{sec:Representations}, must be used to evaluate $p_{global}$, $p_{agent}$, and the $N$ environment factors $p_{env,k}$, for a given ${T}_{in}^{B_{t}, B_{t+1}}$.
 \begin{figure}[t]
 \centerline{\includegraphics[width=\columnwidth]{product-predictor}}
-\caption[Factored Prediction]{ A Dynamic Product of Experts. This gives the structure of a factorised predictor for a single context, as depicted in the modular learner in Figure~\ref{fig:modular-simple}. Each expert in the product has an applicability condition, which determines whether it contributes to the product. The applicable predictors combine densities over predictions to produce an overall density. This is optimised to produce a specific prediction.}
+\caption[Factored Prediction]{A Dynamic Product of Experts. This gives the structure of a factorised predictor for a single context, as depicted in the modular learner in Figure~\ref{fig:modular-simple}. Each expert in the product has an applicability condition, which determines whether it contributes to the product. The applicable predictors combine densities over predictions to produce an overall density. This is optimised to produce a specific prediction.}
 \label{fig:modular}
 \end{figure}
 
