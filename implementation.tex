@@ -10,6 +10,29 @@ The implementations are indexed by the algorithms used, and the information empl
 
 LWPR \citep{vijayakumar_incremental_2005} is a powerful method,  applied widely in robotics, for estimating the mapping described by Equation~\eqref{eq:Learning.short}. The regression scheme was implemented using the LWPR software library \citep{klanke_library_2008}. LWPR was chosen because it employs an incremental learning algorithm that can handle a large number of input dimensions. After initial experimentation, LWPR was run using the Euler angle parameterisation. The dimensions of the input and output spaces of each LWPR predictor are summarised in Table~\ref{tab:InpOutSpace}.
 
+\begin{table}[t]
+\begin{center}
+\begin{tabular}{|l|l|l|l|l|l|}
+\cline{1-5}
+Predictor & \multicolumn{3}{|c|}{input dim. } & output dim. \\ 
+\cline{1-5} 
+LWPR-G (e) & \multicolumn{3}{|c|}{18} & 6 \\
+LWPR-GA (e) & \multicolumn{3}{|c|}{24} & 6 \\
+LWPR-GAE (e) & \multicolumn{3}{|c|}{24 + N*6} & 6 \\
+\cline{1-5}
+%Predictor & \multicolumn{3}{|c|}{input space per factor} & output space \\
+\cline{2-4}
+ & global & agent & env & \\
+\cline{1-5}
+KDEF (e) & 18 & 12 & 6 & 6 \\
+KDEF (q) & 21 & 14 & 7 & 7 \\
+KDEF (v) & 21 & 14 & 7 & 7 \\
+\cline{1-5}
+\end{tabular}
+\caption[Input/output space]{Input \& output dimensionality. There are $N$ ``environment contacts'', so there are $N$ environment experts. The abbreviations refer to the parameterisation of rigid body transforms: (e) - Euler, (q) - Gauss quaternion, (v)- Von Mises-Fisher quaternion.}\label{tab:InpOutSpace}
+\end{center}
+\end{table}
+
 %\begin{table}[b]
 %\begin{center}
 %\begin{tabular}{|l|l|l|}
@@ -119,28 +142,7 @@ d_\mathrm{V}(\mathbf{q}, \hat{\mathbf{q}}, h^{(q)}) =
 %%\STATE $\mathcal{K} = \{ ( K^{x,j}_f ,  K^{y,j}_f ) \, \forall f \in F \}_{ j = 1 \ldots M}$
 %\end{algorithmic}
 %\end{figure}
-\begin{table}[t]
-\begin{center}
-\begin{tabular}{|l|l|l|l|l|l|}
-\cline{1-5}
-Predictor & \multicolumn{3}{|c|}{input dim. } & output dim. \\ 
-\cline{1-5} 
-LWPR-G (e) & \multicolumn{3}{|c|}{18} & 6 \\
-LWPR-GA (e) & \multicolumn{3}{|c|}{24} & 6 \\
-LWPR-GAE (e) & \multicolumn{3}{|c|}{24 + N*6} & 6 \\
-\cline{1-5}
-%Predictor & \multicolumn{3}{|c|}{input space per factor} & output space \\
-\cline{2-4}
- & global & agent & env & \\
-\cline{1-5}
-KDEF (e) & 18 & 12 & 6 & 6 \\
-KDEF (q) & 21 & 14 & 7 & 7 \\
-KDEF (v) & 21 & 14 & 7 & 7 \\
-\cline{1-5}
-\end{tabular}
-\caption[Input/output space]{Input \& output dimensionality. There are $N$ ``environment contacts'', so there are $N$ environment experts. The abbreviations refer to the parameterisation of rigid body transforms: (e) - Euler, (q) - Gauss quaternion, (v)- Von Mises-Fisher quaternion.}\label{tab:InpOutSpace}
-\end{center}
-\end{table}
+
 The learning algorithm, for a single context, for factored KDE is now straightforward, given a set of $S$ training sequences $\{ (\hat{\bx}^{1:\tau} , \hat{\by}^{1:\tau})_s \}_{s = 1 \ldots S}$, each of length $\tau$. The kernel centres are simply stored in a set $\mathcal{K} = \{ ( \hat{\bx}^j_f ,  \hat{\by}^j_f ) \, \forall f \in F \}_{ j = 1 \ldots M}$, where $\hat{\bx}^j_f$ denotes the $j^{th}$ kernel centre, and $M= \tau \times S$. A kernel bandwidth is computed for $\bx_f$ and $\by_f$ for each factor $f$, and stored in a set $\mathcal{H} = \{ (\mathbf{H}^{\bx_f},  \mathbf{H}^{\by_f} ) \}_{f \in F}$. The training procedure for KDE is identical, but with only one factor. The dimensionality of the input ($\bx$) and output ($\by$) spaces for different KDEF predictors is summarised in Table~\ref{tab:InpOutSpace}. The equivalent unfactored KDE space is obtained by summing over the factors of the equivalent KDEF predictor. Each object is trained as a separate context to form a modular predictor.
 %\begin{table}[b]
 %\begin{center}
