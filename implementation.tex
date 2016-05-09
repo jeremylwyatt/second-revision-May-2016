@@ -1,0 +1,216 @@
+\section{Implementation}\label{sec:Implementation}
+
+\newcommand{\bx}{\mathbf{x}}
+\newcommand{\by}{\mathbf{y}}
+
+The implementations are indexed by the algorithms used, and the information employed. For the function approximation formulation we used Locally Weighted Projection Regression (LWPR). For the unfactored density estimation formulation we used a variant of Kernel Density Estimation (KDE), and for the factored density estimation formulation we also used KDE, but denote it KDEF where -F denotes the use of factorisation. In addition, each algorithm: LWPR, KDE, KDEF, was implemented with differing amounts of input information. We denote these G (Global), GA (Global and Agent) and GAE (Global and Agent and Environment), as described previously. All the implementations depend on the parameterisation of rigid-body transformations chosen. In this paper we tested two parameterisations of orientation: Euler angles and quaternions (see e.g. \citep{murray_mathematical_1994}). We also employed two different densities for the quaternion parameterisation: Gaussian and von-Mises Fisher.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Regression method}\label{sec:Implementation.regression}
+
+LWPR \citep{vijayakumar_incremental_2005} is a powerful method,  applied widely in robotics, for estimating the mapping described by Equation~\eqref{eq:Learning.short}. The regression scheme was implemented using the LWPR software library \citep{klanke_library_2008}. LWPR was chosen because it employs an incremental learning algorithm that can handle a large number of input dimensions. After initial experimentation, LWPR was run using the Euler angle parameterisation. The dimensions of the input and output spaces of each LWPR predictor are summarised in Table~\ref{tab:InpOutSpace}.
+
+%\begin{table}[b]
+%\begin{center}
+%\begin{tabular}{|l|l|l|}
+%\cline{1-3}
+%Predictor & input space & output space \\
+%\cline{1-3}
+%LWPR-G euler & 18 & 6 \\
+%LWPR-GA euler & 24 & 6 \\
+%LWPR-GAE euler & 24 + N*6 & 6 \\
+%\cline{1-3}
+%\end{tabular}
+%\end{center}
+%\caption[Input/output space LWPR]{Dimensions of input and output spaces
+%of LWPR predictors, where $N$ is the number of
+%"environment contacts".}\label{tab:InpOutSpaceLWPR}
+%\end{table}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Kernel density method}\label{sec:Implementation.kde}
+
+A variant of Kernel Density Estimation (KDE) \citep{scott2004multi-dimensional} is used to approximate the conditional densities employed in the product in Equation~\eqref{eq:Learning.MultiFactorProduct}. This requires that we encode the rigid body transformations as parameter vectors. To that end, and for the sake of compactness, we introduce some additional notation. First $T^{\bx_f}$ is used to denote the set of conditioning transformations for factor $f \in \{G, A, (E,1) \ldots (E,N)\}$, and $T^{\by_f}$ for the corresponding conditioned transformation. $\bx_f$ and $\by_f$ are then simply the corresponding parameter vectors for a given parameterisation. Given this, the global factor, for example, can be referred to in three equivalent ways:
+
+\begin{eqnarray}
+p_G(T^{B_{t}, B_{t+1}}|T^{A_{t}, A_{t+1}}, T^{A_t, B_t}, T^{B_t, O}) \\ \equiv p_G(T^{\by_G}|T^{\bx_G})  \\
+\equiv p_G(\by_G|\bx_G)
+\end{eqnarray}
+
+Finally, we define the parameter vectors for the unfactored density estimation problem Eq.\eqref{eq:Learning.density} as the concatenation of the vectors for each factor, so that
+
+\begin{equation}
+\bx= \langle \bx_G, \bx_A, \{\bx_{E,k}\}_{k = 1 \ldots N} \rangle
+\end{equation}
+
+\begin{equation}
+\by = \langle \by_G, \by_A, \{\by_{E,k}\}_{k = 1 \ldots N} \rangle
+\end{equation}
+
+So as to capture the conditional probability densities (CPD) over $\by_f$, for all the different values of $\bx_f$, we simply perform kernel density estimation for their joint density, and then  index by the specific $\bx^t$ at prediction time to give $p_f(\by_f^t|\bx_f^t)$. For factor $f$ the joint density kernel estimate is:
+\begin{equation}
+p_f(\by_f,\bx_f) \propto \mathop{\sum}_{j=1 \ldots M}
+K_{\mathbf{H}^{\bx_f}}(\bx_f - \hat{\bx}_f^j)
+K_{\mathbf{H}^{\by_f}}(\by_f - \hat{\by}_f^j)
+\label{eq:Density.Estimation.mixture}
+\end{equation}
+\noindent where the bandwidth matrices  $\mathbf{H}^{\bx_f} $ and $\mathbf{H}^{\by_f} $ are diagonal, so that $\mathbf{H}^{\bx_f}_{ii}  = \theta \mathbf{h}^{\bx_f}_i$. Vectors $\mathbf{h}^{\bx_f}$ and $\mathbf{h}^{\by_f}$  are estimated from training samples using Silverman's ``multivariate rule-of-thumb'' \citep{scott2004multi-dimensional}. The additional scaling parameter $\theta \in \mathbb{R}$ is estimated by model selection (see Subsection~\ref{sec:Experiment.Setup}). Note that $\mathbf{H}^{\bx_f}$ and $\mathbf{H}^{\by_f}$ depend on the factor $f$ being estimated. Given that they are diagonal, and suppressing $f$ and $\theta$ for compactness, each kernel function $K()$ in Equation~\eqref{eq:Density.Estimation.mixture} can thus be written:
+\begin{equation}
+K_{\mathbf{H}^\bx}(\bx - \hat{\bx}) = \exp \left[-\frac{1}{2}d(\bx, \hat{\bx}, \mathbf{h^{x}}) \right]
+\label{eq:Density.Estimation.kernel}
+\end{equation}
+
+%\begin{equation}
+%K(\bx, \hat{\bx}, \mathbf{h}) =
+%\mathop{\prod}_{l=1 \ldots L} \exp \left[-\frac{1}{2}d(\bx_l, \hat{\bx}_l, \mathbf{h}_l)\right]
+%\label{eq:Density.Estimation.kernel}
+%\end{equation}
+%\noindent where the $\bx_l$ are the parameters of the $L$ transformations that are the conditioning variables in the CPD. A similar form exists for $\by$, with $L=1$. 
+\noindent where $d()$ is a \textit{distance function} that determines the kernel type. We employed Gaussian kernels for both Euler and quaternion representations, and additionally Gaussian+Von Mises Fisher kernels for the case of quaternions. For a \textit{Gaussian kernel}:
+\begin{equation}
+d_\mathrm{\mathcal{N}}(\bx, \hat{\bx}, \mathbf{h}) =
+(\bx - \hat{\bx})^\mathrm{T}\mathbf{H}^{-1}(\bx - \hat{\bx})
+%\mathop{\sum}_{i=1 \ldots \mathrm{DIM}(x)} \left(\frac{x_i - \hat{x}_i}{h_i}\right)^2
+\label{eq:Density.Estimation.gaussiandist}
+\end{equation}
+%\noindent 
+%Here $\bx, \hat{\bx}, \mathbf{h}$ are in $\mathbb{R}^6$ for Euler angles or $\mathbb{R}^7$ for the quaternion parameterisation.
+%\begin{equation}
+%d_\mathrm{Mahalanobis}(\bx, \hat{\bx}, \mathbf{C}) = (x - \hat{x})^\mathrm{T}\mathbf{C}^{-1}(x - \hat{x})
+%\label{eq:Density.Estimation.Mahalanobis}
+%\end{equation}
+For a product of a Gaussian kernel and \textit{von~Mises--Fisher} kernel:
+\begin{equation}
+d_\mathrm{\mathcal{N}V}(\bx, \hat{\bx}, \mathbf{h}) =
+d_\mathrm{\mathcal{N}}(\mathbf{p}, \hat{\mathbf{p}} \mathbf{h}^{(p)})  + d_\mathrm{V}(\mathbf{q}, \hat{\mathbf{q}}, h^{(q)})
+\label{eq:Density.Estimation.gaussvmfdist}
+\end{equation}
+\noindent where %$\mathbf{p} \in \mathbb{R}^3$,
+$\mathbf{h} = \left[ \mathbf{h}^{(p)} ; h^{(q)} \right]$,
+$\mathbf{h}^{(p)} \in \mathbb{R}^3$,
+$h^{(q)} \in \mathbb{R}$,
+%$h = \left[\begin{array}{cc}h^l & h^o\end{array}\right]^\mathrm{T}$, $h^o \in \mathbb{R}$,
+and (see e.g.\ \citep{abramowitz_handbook_1965}):
+\begin{equation}
+d_\mathrm{V}(\mathbf{q}, \hat{\mathbf{q}}, h^{(q)}) =
+2 h^{(q)} \left(1 - \left| \mathbf{q} \cdot \hat{\mathbf{q}} \right|\right)
+\label{eq:Density.Estimation.vmfdist}
+\end{equation}
+\noindent where $\mathbf{q} \cdot \hat{\mathbf{q}}$ is the quaternion dot product, and taking the absolute value fixes the double cover problem. This Von Mises--Fisher kernel is an approximation (up to a multiplicative constant \citep{detry_learning_2010}) of the von~Mises--Fisher distribution.
+
+%\begin{figure}
+%\caption{Learning with KDEF}
+%\label{alg:learning}
+%\begin{algorithmic}
+%\STATE {\bf learn-KDEF(\{$X^{0:T}$,$Y^{0:T}$\}_) $\rightarrow ( \mathcal{K}, \mathcal{H}$)
+%\STATE \mathcal{K} is the set of kernel centres
+%\STATE \mathcal{H} is the set of kernel bandwidths
+%\STATE $j=1$
+%\FOR{each of S trials}
+%\FOR{$t=0$ to $T-1$}
+%\FOR{each factor $f \in F = \{G,A,(E,1) \ldots (E,N)\}$}
+%\STATE $\mathcal{K}^{x,j}_{f} = K_{\mathbf{H^{X_f}}}(X^t_{f})$
+%\STATE $\mathcal{K}^{y,j}_{f} = K_{\mathbf{H^{Y_f}}}(Y^t_{f})$
+%\ENDFOR
+%\STATE $j=j+1$
+%\ENDFOR
+%\ENDFOR
+%%\STATE $\mathcal{K} = \{ ( K^{x,j}_f ,  K^{y,j}_f ) \, \forall f \in F \}_{ j = 1 \ldots M}$
+%\end{algorithmic}
+%\end{figure}
+\begin{table}[t]
+\begin{center}
+\begin{tabular}{|l|l|l|l|l|l|}
+\cline{1-5}
+Predictor & \multicolumn{3}{|c|}{input dim. } & output dim. \\ 
+\cline{1-5} 
+LWPR-G (e) & \multicolumn{3}{|c|}{18} & 6 \\
+LWPR-GA (e) & \multicolumn{3}{|c|}{24} & 6 \\
+LWPR-GAE (e) & \multicolumn{3}{|c|}{24 + N*6} & 6 \\
+\cline{1-5}
+%Predictor & \multicolumn{3}{|c|}{input space per factor} & output space \\
+\cline{2-4}
+ & global & agent & env & \\
+\cline{1-5}
+KDEF (e) & 18 & 12 & 6 & 6 \\
+KDEF (q) & 21 & 14 & 7 & 7 \\
+KDEF (v) & 21 & 14 & 7 & 7 \\
+\cline{1-5}
+\end{tabular}
+\caption[Input/output space]{Input \& output dimensionality. There are $N$ ``environment contacts'', so there are $N$ environment experts. The abbreviations refer to the parameterisation of rigid body transforms: (e) - Euler, (q) - Gauss quaternion, (v)- Von Mises-Fisher quaternion.}\label{tab:InpOutSpace}
+\end{center}
+\end{table}
+The learning algorithm, for a single context, for factored KDE is now straightforward, given a set of $S$ training sequences $\{ (\hat{\bx}^{1:\tau} , \hat{\by}^{1:\tau})_s \}_{s = 1 \ldots S}$, each of length $\tau$. The kernel centres are simply stored in a set $\mathcal{K} = \{ ( \hat{\bx}^j_f ,  \hat{\by}^j_f ) \, \forall f \in F \}_{ j = 1 \ldots M}$, where $\hat{\bx}^j_f$ denotes the $j^{th}$ kernel centre, and $M= \tau \times S$. A kernel bandwidth is computed for $\bx_f$ and $\by_f$ for each factor $f$, and stored in a set $\mathcal{H} = \{ (\mathbf{H}^{\bx_f},  \mathbf{H}^{\by_f} ) \}_{f \in F}$. The training procedure for KDE is identical, but with only one factor. The dimensionality of the input ($\bx$) and output ($\by$) spaces for different KDEF predictors is summarised in Table~\ref{tab:InpOutSpace}. The equivalent unfactored KDE space is obtained by summing over the factors of the equivalent KDEF predictor. Each object is trained as a separate context to form a modular predictor.
+%\begin{table}[b]
+%\begin{center}
+%\begin{tabular}{|l|l|l|l|l|}
+%\cline{1-5}
+%Predictor & \multicolumn{3}{|c|}{input space per factor} & output space \\
+%\cline{2-4}
+% & global & agent & env & \\
+%\cline{1-5}
+%KDEF euler & 18 & 12 & 6 & 6 \\
+%KDEF quat & 21 & 14 & 7 & 7 \\
+%KDEF vmf & 21 & 14 & 7 & 7 \\
+%\cline{1-5}
+%\end{tabular}
+%\end{center}
+%\caption[Input/output space KDEF]{Input and output space dimensions of KDEF factors. There are $N$ environment factors.}\label{tab:InpOutSpaceKDE}
+%\end{table}
+\subsection{Prediction}
+Single step prediction for LWPR is straightforward, but single step prediction for KDE involves optimisation of the likelihood of the prediction, and for KDEF this is non-trivial. We describe that here. Following Equation~\eqref{eq:Learning.MultiFactorProduct},
+the single step prediction problem can be defined as finding the
+transformation $T^{\by^*}$, parameterised by $\by^*$, which maximises the product of conditional densities
+\eqref{eq:Learning.product} given query $\bx$, i.e.:
+\begin{equation}
+ \by^*= \argmax{\by} p_{qs}(\by|\bx)
+\label{eq:Density.Estimation.max}
+\end{equation}
+The one-step prediction algorithm is given in Fig~\ref{alg:prediction}. First, for the input vector $\bx$, the conditional density over $\by$ must be obtained for each factor $f$. This is achieved by evaluation of each kernel  $K_{\mathbf{H^{\bx_f}}}(\bx_f - \hat{\bx}_f^j)$, from \mbox{$j=1:M$} in Eq~\eqref{eq:Density.Estimation.mixture}, to give a weight $w_{f,j}$. The vector of normalised weights $\vec{w_f}$ forms a distribution over the kernels in $\by_f$. $\vec{w_f}$ is computed for every factor $f$. For efficiency we only consider the $r$ kernels with the highest weights $w_{f,j}$ at the query point $\bx_f$. 
+
+A initial population of solutions is then generated by sampling. First, a factor $f$ is sampled randomly. Then a kernel $j$ is sampled by drawing $j$ according to the distribution $\vec{w}_f$. Finally, a candidate $\tilde{\by}$ is sampled from the $j^{th}$ kernel with centre $\hat{\by}^j_f$. This sampling procedure is run $\beta$ times to create the initial set of candidate solutions.
+\begin{figure}
+\begin{center}
+\begin{algorithmic}
+\STATE {\bf one-step-prediction-KDEF(x) $\rightarrow \by^*$} 
+\STATE $F = (G, A, (E,1) \ldots (E,N))$  \\
+\FOR{$f \in F$}       
+\FOR{$j = 1$ to $M$}
+\STATE $w_{f,j} = K_{\mathbf{H^{\bx_f}}}(\bx_f - \hat{\bx}_f^j)$
+\ENDFOR
+\STATE $\vec{w_f} =$ normalisation($w_{f,1} \ldots w_{f,M}$)
+\ENDFOR
+\FOR{$i=1$ to $\beta$}
+\STATE randomly sample a factor $f\in F$ 
+\STATE sample $j$ from distribution $\vec{w_f}$
+\STATE  $\mathcal{Y}_i = \tilde{\by}$ sampled from density with mean $\hat{\by}^j_f$ and bandwidth $\mathbf{H^{\by_f}}$
+\ENDFOR
+\STATE maximise Eq.10 with $Y^*$ = differential-evolution($\mathcal{Y}$,$\mathcal{K}$) 
+\end{algorithmic}
+\caption{\label{alg:prediction}One-step prediction for the KDEF method}
+\end{center}
+\end{figure}
+
+This initial solution set is then refined by stochastic optimisation with respect to $p_{qs}$. To achieve this, similarity transforms must be used to evaluate the likelihood of each $\by$ according to each factor $f$. Any optimisation routine could be applied, but we used differential evolution (DE) \citep{storn_differential_1997}\footnote{Note that one cannot use the mean-shift algorithm \citep{cheng_mean_1995}
+due to the product involved in \eqref{eq:Density.Estimation.max}}.
+DE is particularly simple to tune, since it has two meta-parameters: \textit{crossover probability} $\alpha$ and \textit{population size} $\beta$. If the number of generations is fixed, the total run time scales linearly with the number of factors, their dimensionality, and the number of samples. Optionally, the entire maximisation procedure is stopped when no further significant improvement is observed. 
+
+%The optimisation algorithm requires an ability to sample from the product~\eqref{eq:Learning.product}.
+%This can be achieved by performing the following two step procedure:
+%
+%\begin{enumerate}
+%\item Randomly choose an factor $k$ and then sample $j$ from
+%a set of samples $\{w_{k,j}\}$ using the importance sampling algorithm
+%with importance weights $w_{k,j}$ (e.g. \citep{bishop_pattern_2006}).
+%\item Sample from a multivariate Gaussian centred at $\hat{\by}_{j,k}$ with
+%covariance $\mathbf{C}_{ii} = [H_k \mathbf{h}^{(Y)}_k]_i$, using
+%e.g.\ the Marsaglia polar method \citep{marsaglia_convenient_1964}.
+%\end{enumerate}
+%
+%Importantly, after generating a new solution candidate,
+%all sub-vectors $\mathbf{q}$ have to be normalised when a quaternion parameterisation is used.
+
+%All KDEF factors are assumed to be independent,
+%therefore their domains do not sum up.
+In order to solve the multi-step prediction problem, the prediction from the one step prediction algorithm $\by^t$ is fed back as the relevant part of the conditioning parameter vector $\bx^{t+1}$. In this way long prediction sequences can be generated for all the algorithms. For efficiency, no learning or prediction was performed in a given trial until the initial contact was made between the robot and object.

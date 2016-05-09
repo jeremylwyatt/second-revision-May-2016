@@ -1,0 +1,124 @@
+%%%%%%%%%%%%%%%%%%%%%%% file template.tex %%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% This is a general template file for the LaTeX package SVJour3
+% for Springer journals.          Springer Heidelberg 2010/09/16
+%
+% Copy it to a new file with a new name and use it as the basis
+% for your article. Delete % signs as needed.
+%
+% This template includes a few options for different layouts and
+% content for various journals. Please consult a previous issue of
+% your journal as needed.
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% First comes an example EPS file -- just ignore it and
+% proceed on the \documentclass line
+% your LaTeX will extract the file if required
+%\begin{filecontents*}{example.eps}
+%!PS-Adobe-3.0 EPSF-3.0
+%%BoundingBox: 19 19 221 221
+%%CreationDate: Mon Sep 29 1997
+%%Creator: programmed by hand (JK)
+%%EndComments
+%gsave
+%newpath
+%  20 20 moveto
+%  20 220 lineto
+%  220 220 lineto
+%  220 20 lineto
+%closepath
+%2 setlinewidth
+%gsave
+%  .4 setgray fill
+%grestore
+%stroke
+%grestore
+%\end{filecontents*}
+%
+\RequirePackage{fix-cm}
+%
+%\documentclass{svjour3}                     % onecolumn (standard format)
+%\documentclass[smallcondensed]{svjour3}     % onecolumn (ditto)
+%\documentclass[smallextended]{svjour3}       % onecolumn (second format)
+\documentclass[natbib,twocolumn]{svjour3}          % twocolumn
+%
+\smartqed  % flush right qed marks, e.g. at end of proof
+%
+\usepackage{graphicx}
+%
+% \usepackage{mathptmx}      % use Times fonts if available on your TeX system
+%
+% insert here the call for the packages your document requires
+%\usepackage{latexsym}
+% etc.
+\usepackage{amsmath,amssymb,amsbsy}
+\usepackage{algorithm}
+\usepackage{graphicx}
+\usepackage{epstopdf}
+\usepackage{algorithmic}
+\usepackage{stackengine}
+
+%
+% please place your own definitions here and don't use \def but
+% \newcommand{}{}
+\newcommand{\Ex}{\mathop{\mathbb E\/}}
+\newcommand{\argmax}[1]{\underset{#1}{\operatorname{argmax}}\medspace}
+
+% Insert the name of "your journal" with
+% \journalname{myjournal}
+%
+\begin{document}
+
+\title{Learning modular and transferable forward models of the motions of push manipulated objects\thanks{Kopicki is first author. Wyatt, Kopicki and Zurek are the primary authors. Wyatt is corresponding author. We gratefully acknowledge support of grant EU-FP7-IST-600918-PaCMan.}
+}
+%\subtitle{Do you have a subtitle?\\ If so, write it here}
+
+\titlerunning{Learning Modular and Transferable Forward Models of the Motions of Push Manipulated Objects }        % if too long for running head
+
+\author{Marek Kopicki  \and Sebastian Zurek \and Rustam Stolkin \and Thomas Moerwald \and Jeremy L. Wyatt
+}
+
+\authorrunning{Kopicki et al.} % if too long for running head
+
+\institute{Kopicki, Wyatt et al.\at
+              School of Computer Science \\
+              University of Birmingham\\
+              Birmingham, B15 2TT
+              Tel.: +44-121-414-4788\\
+              \email{\{msk,jlw\}@cs.bham.ac.uk}      
+              \and
+              Thomas Moerwald \at
+              ACIN, TU Wien \\
+              Gusshausstrasse 27-29 / E376
+1040 Vienna, Austria \\
+Tel.: +43 (1)58801 - 376631 \\
+              \email{moerwald@acin.tuwien.ac.at}           %  \\
+%             \emph{Present address:} of F. Author  %  if needed
+}
+\date{Received: date / Accepted: date}
+% The correct dates will be entered by the editor
+\maketitle
+
+\begin{abstract}
+\input{abstract}
+\keywords{Transfer learning \and Manipulation \and Prediction \and Robot Learning}
+% \PACS{PACS code1 \and PACS code2 \and more}
+% \subclass{MSC code1 \and MSC code2 \and more}
+\end{abstract}
+
+\input{introduction}
+\input{motivation}
+\input{schema}
+\input{learning}
+\input{implementation}
+\input{results}
+\input{background}
+\input{conclusions}
+
+\bibliographystyle{spmpscinat}
+\bibliography{main}  
+
+\end{document}
+% end of file template.tex
+
